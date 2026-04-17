@@ -1,0 +1,158 @@
+﻿import { pool } from "../db/pool.js";
+
+export async function listInvoices({ search = "", page = 1, limit = 10, sortBy = "invoice_date", sortDir = "desc" } = {}) {
+  const offset = (Number(page) - 1) * Number(limit);
+  const allowedSort = ["invoice_no", "customer_name", "invoice_date", "amount_due", "sales_person_name"];
+  const sortColumn = allowedSort.includes(sortBy) ? sortBy : "invoice_date";
+  const sortDirection = sortDir === "asc" ? "ASC" : "DESC";
+  const searchParam = `%${search}%`;
+
+  const countResult = await pool.query(
+    `SELECT COUNT(*) as total FROM invoice i JOIN customer c ON c.id = i.customer_id LEFT JOIN sales_person sp ON sp.id = i.sales_person_id WHERE i.invoice_no ILIKE $1 OR c.name ILIKE $1 OR sp.name ILIKE $1`,
+    [searchParam]
+  );
+  const total = Number(countResult.rows[0].total);
+
+  const { rows } = await pool.query(
+    `SELECT i.invoice_no, i.invoice_date, i.amount_due, c.name as customer_name, sp.name as sales_person_name
+     FROM invoice i JOIN customer c ON c.id = i.customer_id LEFT JOIN sales_person sp ON sp.id = i.sales_person_id
+     WHERE i.invoice_no ILIKE $1 OR c.name ILIKE $1 OR sp.name ILIKE $1
+     ORDER BY ${sortColumn} ${sortDirection} NULLS LAST, i.id DESC LIMIT $2 OFFSET $3`,
+    [searchParam, Number(limit), offset]
+  );
+
+  return { data: rows, total, page: Number(page), limit: Number(limit), totalPages: Math.ceil(total / Number(limit)) };
+}
+
+async function resolveInvoiceId(invoice_no) {
+  const r = await pool.query("SELECT id FROM invoice WHERE invoice_no = $1", [invoice_no]);
+  return r.rowCount > 0 ? r.rows[0].id : null;
+}
+
+export async function getInvoice(idOrInvoiceNo) {
+  let id = idOrInvoiceNo;
+  if (typeof idOrInvoiceNo === "string" && String(idOrInvoiceNo).trim() !== "" && isNaN(Number(idOrInvoiceNo))) {
+    id = await resolveInvoiceId(String(idOrInvoiceNo).trim());
+    if (id == null) return null;
+  } else { id = Number(idOrInvoiceNo); }
+
+  const header = await pool.query(
+    `select i.invoice_no, i.invoice_date, i.total_amount, i.vat, i.amount_due,
+            c.code as customer_code, c.name as customer_name, c.address_line1, c.address_line2,
+            co.name as country_name, sp.code as sales_person_code, sp.name as sales_person_name
+     from invoice i join customer c on c.id = i.customer_id left join country co on co.id = c.country_id
+     left join sales_person sp on sp.id = i.sales_person_id where i.id = $1`,
+    [id]
+  );
+  if (header.rowCount === 0) return null;
+
+  const lines = await pool.query(
+    `select li.id, p.code as product_code, p.name as product_name, u.code as units_code, li.quantity, li.unit_price, li.extended_price
+     from invoice_line_item li join product p on p.id = li.product_id join units u on u.id = p.units_id where li.invoice_id = $1 order by li.id`,
+    [id]
+  );
+  return { header: header.rows[0], line_items: lines.rows };
+}
+
+async function enrichLineItems(client, line_items) {
+  const enriched = [];
+  for (const li of line_items) {
+    const pr = await client.query("SELECT id, unit_price FROM product WHERE code = $1", [li.product_code]);
+    if (pr.rowCount === 0) throw new Error(`Product not found: ${li.product_code}`);
+    const unit_price = li.unit_price ?? Number(pr.rows[0].unit_price ?? 0);
+    enriched.push({ ...li, product_id: pr.rows[0].id, unit_price, extended_price: Number(li.quantity) * unit_price });
+  }
+  return enriched;
+}
+
+export async function createInvoice({ invoice_no, customer_code, sales_person_code, invoice_date, vat_rate, line_items }) {
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const cust = await client.query("SELECT id FROM customer WHERE code = $1", [customer_code]);
+    if (cust.rowCount === 0) throw new Error(`Customer not found`);
+    const customer_id = cust.rows[0].id;
+
+    let sales_person_id = null;
+    if (sales_person_code) {
+      const sp = await client.query("SELECT id FROM sales_person WHERE code = $1", [sales_person_code]);
+      if (sp.rowCount > 0) sales_person_id = sp.rows[0].id;
+    }
+
+    let finalInvoiceNo = invoice_no;
+    if (!finalInvoiceNo || String(finalInvoiceNo).trim() === "") {
+      const maxRes = await client.query("SELECT coalesce(MAX(id), 0) + 1 as next_id FROM invoice");
+      finalInvoiceNo = `INV-${String(maxRes.rows[0].next_id).padStart(4, '0')}`;
+    }
+
+    const enriched = await enrichLineItems(client, line_items);
+    const total = enriched.reduce((s, x) => s + x.extended_price, 0);
+    const vat = total * vat_rate;
+    const amount_due = total + vat;
+
+    const inv = await client.query(
+      `insert into invoice (id, created_at, invoice_no, invoice_date, customer_id, sales_person_id, total_amount, vat, amount_due)
+       values ((select coalesce(max(id),0)+1 from invoice), now(), $1, $2, $3, $4, $5, $6, $7) 
+       returning id, invoice_no`,
+      [finalInvoiceNo, invoice_date, customer_id, sales_person_id, total, vat, amount_due]
+    );
+
+    const newInvoiceId = inv.rows[0].id;
+    for (const li of enriched) {
+      await client.query(
+        `insert into invoice_line_item (id, created_at, invoice_id, product_id, quantity, unit_price, extended_price)
+         values ((select coalesce(max(id),0)+1 from invoice_line_item), now(), $1, $2, $3, $4, $5)`,
+        [newInvoiceId, li.product_id, li.quantity, li.unit_price, li.extended_price]
+      );
+    }
+    await client.query("commit");
+    return { invoice_no: inv.rows[0].invoice_no };
+  } catch (err) { await client.query("rollback"); throw err; } finally { client.release(); }
+}
+
+export async function updateInvoice(idOrInvoiceNo, { invoice_no, customer_code, sales_person_code, invoice_date, vat_rate, line_items }) {
+  let id = idOrInvoiceNo;
+  if (typeof idOrInvoiceNo === "string" && isNaN(Number(idOrInvoiceNo))) { id = await resolveInvoiceId(idOrInvoiceNo); }
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const cust = await client.query("SELECT id FROM customer WHERE code = $1", [customer_code]);
+    const customer_id = cust.rows[0].id;
+
+    let sales_person_id = null;
+    if (sales_person_code) {
+      const sp = await client.query("SELECT id FROM sales_person WHERE code = $1", [sales_person_code]);
+      if (sp.rowCount > 0) sales_person_id = sp.rows[0].id;
+    }
+
+    const enriched = await enrichLineItems(client, line_items);
+    const total = enriched.reduce((s, x) => s + x.extended_price, 0);
+    const vat = total * vat_rate;
+    const amount_due = total + vat;
+
+    const res = await client.query(
+      `UPDATE invoice SET invoice_no=$1, invoice_date=$2, customer_id=$3, sales_person_id=$4, total_amount=$5, vat=$6, amount_due=$7 WHERE id=$8 returning invoice_no`,
+      [invoice_no, invoice_date, customer_id, sales_person_id, total, vat, amount_due, id]
+    );
+
+    await client.query("DELETE FROM invoice_line_item WHERE invoice_id = $1", [id]);
+    for (const li of enriched) {
+      await client.query(`INSERT INTO invoice_line_item (id, created_at, invoice_id, product_id, quantity, unit_price, extended_price)
+         VALUES ((select coalesce(max(id),0)+1 from invoice_line_item), now(), $1, $2, $3, $4, $5)`,
+        [id, li.product_id, li.quantity, li.unit_price, li.extended_price]);
+    }
+    await client.query("commit");
+    return { invoice_no: res.rows[0].invoice_no };
+  } catch (err) { await client.query("rollback"); throw err; } finally { client.release(); }
+}
+
+// เพิ่มฟังก์ชันที่หายไปกลับคืนมา
+export async function deleteInvoice(idOrInvoiceNo) {
+  let id = idOrInvoiceNo;
+  if (typeof idOrInvoiceNo === "string" && String(idOrInvoiceNo).trim() !== "" && isNaN(Number(idOrInvoiceNo))) {
+    id = await resolveInvoiceId(String(idOrInvoiceNo).trim());
+    if (id == null) return null;
+  } else { id = Number(idOrInvoiceNo); }
+  await pool.query("DELETE FROM invoice WHERE id=$1", [id]);
+  return { ok: true };
+}

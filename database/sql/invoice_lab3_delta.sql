@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS configuration (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+INSERT INTO configuration (key, value) VALUES ('vat_percent', '7') ON CONFLICT DO NOTHING;
+
+ALTER TABLE invoice_line_item
+  ADD COLUMN IF NOT EXISTS line_discount_percent  NUMERIC(5,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS line_discount_amount   NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS line_net_price         NUMERIC(12,2) DEFAULT 0;
+
+ALTER TABLE invoice
+  ADD COLUMN IF NOT EXISTS total_price      NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_discount   NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS net_price        NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS vat_percent      NUMERIC(5,2) DEFAULT 7,
+  ADD COLUMN IF NOT EXISTS vat_amount       NUMERIC(12,2) DEFAULT 0;
