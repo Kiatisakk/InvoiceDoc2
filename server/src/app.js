@@ -1,4 +1,4 @@
-﻿// Backend entry: receives HTTP requests and forwards to routes (customers, products, invoices, reports)
+// Backend entry: receives HTTP requests and forwards to routes (customers, products, invoices, reports)
 import express from "express";
 import cors from "cors";
 
@@ -8,6 +8,7 @@ import reportsRoutes from "./routes/reports.routes.js";
 import customersRoutes from "./routes/customers.routes.js";
 import productsRoutes from "./routes/products.routes.js";
 import salesPersonsRoutes from "./routes/salesPersons.routes.js";
+import configurationRoutes from "./routes/configuration.routes.js";
 import testRoutes from "./routes/test.routes.js";
 import { pool } from "./db/pool.js";
 
@@ -79,6 +80,7 @@ app.use("/api/products", productsRoutes);
 app.use("/api/invoices", invoicesRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/sales-persons", salesPersonsRoutes);
+app.use("/api/config", configurationRoutes);  // Configuration API (Step 3)
 
 const port = process.env.PORT || 4000;
 const host = process.env.HOST || "0.0.0.0";

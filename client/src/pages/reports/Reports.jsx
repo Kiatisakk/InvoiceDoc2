@@ -36,7 +36,8 @@ const REPORT_CONFIG = {
           }
         ] : []),
         { key: "quantity_sold", label: "Quantity Sold", align: "right", sortable: true, render: (v) => Number(v || 0).toLocaleString() },
-        { key: "value_sold", label: "Total Revenue", align: "right", sortable: true, style: { fontWeight: 600, color: "var(--primary)" }, render: (v) => formatBaht(v) }
+        { key: "total_discount", label: "Discount", align: "right", sortable: true, style: { color: "var(--text-muted)" }, render: (v) => formatBaht(v || 0) },
+        { key: "value_sold", label: "Net Revenue", align: "right", sortable: true, style: { fontWeight: 600, color: "var(--primary)" }, render: (v) => formatBaht(v) }
       ];
     }
   },
@@ -48,7 +49,8 @@ const REPORT_CONFIG = {
       { key: "year", label: "Month/Year", sortable: true, render: (_, row) => `${new Date(0, row.month - 1).toLocaleString('default', { month: 'long' })} ${row.year}` },
       { key: "product_code", label: "Product", sortable: true, render: (_, row) => <><span className="font-bold">{row.product_code}</span> - {row.product_name}</> },
       { key: "quantity_sold", label: "Qty", align: "right", sortable: true, render: (v) => Number(v || 0).toLocaleString() },
-      { key: "value_sold", label: "Value", align: "right", sortable: true, style: { fontWeight: 600, color: "var(--primary)" }, render: (v) => formatBaht(v) }
+      { key: "total_discount", label: "Discount", align: "right", sortable: true, style: { color: "var(--text-muted)" }, render: (v) => formatBaht(v || 0) },
+      { key: "value_sold", label: "Net Value", align: "right", sortable: true, style: { fontWeight: 600, color: "var(--primary)" }, render: (v) => formatBaht(v) }
     ]
   },
   "customer-sales": {
@@ -80,7 +82,8 @@ const REPORT_CONFIG = {
           }
         ] : []),
         { key: "quantity_sold", label: "Qty", align: "right", sortable: true, render: (v) => Number(v || 0).toLocaleString() },
-        { key: "value_sold", label: "Value", align: "right", sortable: true, style: { fontWeight: 600 }, render: (v) => formatBaht(v) }
+        { key: "total_discount", label: "Discount", align: "right", sortable: true, style: { color: "var(--text-muted)" }, render: (v) => formatBaht(v || 0) },
+        { key: "value_sold", label: "Net Value", align: "right", sortable: true, style: { fontWeight: 600 }, render: (v) => formatBaht(v) }
       ];
     }
   }

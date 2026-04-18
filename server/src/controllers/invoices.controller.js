@@ -14,6 +14,16 @@ export async function listInvoices(req, res) {
   }
 }
 
+export async function getVatConfig(req, res) {
+  try {
+    const vat = await invoicesService.getVatConfig();
+    res.json({ success: true, data: { vat_percent: vat } });
+  } catch (err) {
+    logger.error("getVatConfig failed", { error: err?.message ?? String(err) });
+    sendError(res, err?.message ?? String(err), 500);
+  }
+}
+
 export async function getInvoice(req, res) {
   try {
     const invoiceNo = decodeURIComponent(req.params.invoiceNo || "");

@@ -15,3 +15,10 @@ ALTER TABLE invoice
   ADD COLUMN IF NOT EXISTS net_price        NUMERIC(12,2) DEFAULT 0,
   ADD COLUMN IF NOT EXISTS vat_percent      NUMERIC(5,2) DEFAULT 7,
   ADD COLUMN IF NOT EXISTS vat_amount       NUMERIC(12,2) DEFAULT 0;
+
+UPDATE invoice_line_item
+SET line_net_price = extended_price
+WHERE line_discount_amount = 0 AND extended_price IS NOT NULL;
+
+UPDATE invoice SET total_price = total_amount  WHERE total_price IS NULL;
+UPDATE invoice SET vat_percent = vat  WHERE vat_percent IS NULL;

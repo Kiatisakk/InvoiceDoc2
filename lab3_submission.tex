@@ -1,0 +1,152 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+% IMPORTANT: Remove the "[demo]" option from graphicx below once you have your real images!
+\usepackage[demo]{graphicx} 
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{CPE 241 Database - Individual Lab \#03}
+\author{Student ID: \_\_\_\_\_\_\_\_\_\_\_\_\_ \\ Name: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Screenshots}
+
+\subsection{Sales Person List View}
+% Replace 'screenshot_sp_list.png' with your actual image file
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{screenshot_sp_list.png}
+    \caption{Showing at least 10 records of Sales Person List View.}
+\end{figure}
+
+\clearpage
+\subsection{Sales Person Form View}
+% Replace these with your actual image files
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{screenshot_sp_form1.png}
+    \caption{Form view with data for Sales Person 1.}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{screenshot_sp_form2.png}
+    \caption{Form view with data for Sales Person 2.}
+\end{figure}
+
+\clearpage
+\subsection{Invoice Form with Discounts}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{screenshot_inv_form1.png}
+    \caption{Newly created invoice 1 with discounts and correct header totals.}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{screenshot_inv_form2.png}
+    \caption{Newly created invoice 2 with discounts and correct header totals.}
+\end{figure}
+
+\clearpage
+\subsection{Invoice Reports}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{screenshot_report_print.png}
+    \caption{Printed invoice showing line item discounts and amount due.}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{screenshot_report_sales.png}
+    \caption{Sales reports showing amount due and discounts.}
+\end{figure}
+
+\clearpage
+\section{Code Submission}
+
+\subsection{Database Delta Script (invoice\_lab3\_delta.sql)}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_sql_delta.png}
+    \caption{All schema changes from Lab 2 to Lab 3.}
+\end{figure}
+
+\subsection{Modified and New APIs}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_config_ctrl.png}
+    \caption{New Configuration API - Controller (server/src/controllers/configuration.controller.js)}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_config_svc.png}
+    \caption{New Configuration API - Service (server/src/services/configuration.service.js)}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_config_routes.png}
+    \caption{New Configuration API - Routes (server/src/routes/configuration.routes.js)}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_sp_ctrl.png}
+    \caption{New Sales Person API - Controller (server/src/controllers/salesPersons.controller.js)}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_sp_svc.png}
+    \caption{New Sales Person API - Service (server/src/services/salesPersons.service.js)}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_sp_routes.png}
+    \caption{New Sales Person API - Routes (server/src/routes/salesPersons.routes.js)}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_invoice_model.png}
+    \caption{Modified Invoice Schema (server/src/models/invoice.model.js)}
+\end{figure}
+
+\clearpage
+\subsection{Calculation Logic - UI Tier}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_ui_line_items.png}
+    \caption{Math logic for Line Items (client/src/components/LineItemsEditor.jsx)}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_ui_invoice_form.png}
+    \caption{Math logic for Invoice Header (client/src/components/InvoiceForm.jsx)}
+\end{figure}
+
+\clearpage
+\subsection{Calculation Logic - API Tier}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_math_enrich.png}
+    \caption{Backend Math for Line Items (server/src/services/invoices.service.js - enrichLineItems)}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{code_api_math_header.png}
+    \caption{Backend Math for Header Totals (server/src/services/invoices.service.js - create/update functions)}
+\end{figure}
+
+\end{document}

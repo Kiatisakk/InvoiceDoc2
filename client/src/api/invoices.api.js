@@ -12,6 +12,11 @@ export async function listInvoices(params = {}) {
   return { data: res.data, ...(res.meta || {}) };
 }
 
+export async function getVatConfig() {
+  const res = unwrap(await http(`/api/invoices/config/vat`));
+  return res.data?.vat_percent ?? 0.07;
+}
+
 export async function getInvoice(invoiceNo) {
   const res = unwrap(await http(`/api/invoices/${encodeURIComponent(invoiceNo)}`));
   return res.data;

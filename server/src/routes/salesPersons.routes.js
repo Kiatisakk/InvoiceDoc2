@@ -1,7 +1,14 @@
-﻿import { Router } from "express";
-import { handleList } from "../controllers/salesPersons.controller.js";
+// Sales Person API routes
+// Example usage: GET /api/sales-persons
+import { Router } from "express";
+import * as c from "../controllers/salesPersons.controller.js";
 
-const router = Router();
-router.get("/", handleList);   // แค่ route เดียวพอ
+const r = Router();
 
-export default router;
+r.get("/", c.listSalesPersons);       // List + search + pagination
+r.post("/", c.createSalesPerson);      // Create new
+r.get("/:code", c.getSalesPerson);     // Get by code
+r.put("/:code", c.updateSalesPerson);  // Update by code
+r.delete("/:code", c.deleteSalesPerson); // Delete by code
+
+export default r;
